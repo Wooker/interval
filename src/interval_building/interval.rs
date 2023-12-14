@@ -13,7 +13,7 @@ pub enum OverlapOrdering {
     OverlapGreater,      // (2, 4) in relation to (1, 3)
     OverlapEqualGreater, // (3, 4) in relation to (1, 3)
     Equal,               // (1, 2) (1, 2)
-    Unrecognizable,
+    InvalidInterval,
 }
 
 #[derive(Debug, PartialEq, Eq, PartialOrd, Clone)]
@@ -30,6 +30,10 @@ where
     I: PartialEq + PartialOrd,
 {
     pub fn new(s: ComparableBound<I>, e: ComparableBound<I>) -> Self {
+        if let Some(_) = s.partial_cmp(&e) {
+            assert!(s <= e);
+            assert!(s != e);
+        }
         Self { start: s, end: e }
     }
 
@@ -46,13 +50,8 @@ where
             self.start.partial_cmp(&other.end),
             self.end.partial_cmp(&other.start),
         ) {
-            (None, None) => OverlapOrdering::Unrecognizable,
-            (None, Some(_)) => OverlapOrdering::Unrecognizable,
-            (Some(_), None) => OverlapOrdering::Unrecognizable,
-            (Some(_), Some(_)) => {
-                dbg!("Cross-Comparison is Some");
-                self.cross_compare(other)
-            }
+            (Some(_), Some(_)) => self.cross_compare(other),
+            _ => OverlapOrdering::InvalidInterval,
         }
     }
 
@@ -61,14 +60,20 @@ where
             self.start.partial_cmp(&other.end).unwrap(),
             self.end.partial_cmp(&other.start).unwrap(),
         ) {
-            (Ordering::Less, Ordering::Less) => OverlapOrdering::Greater,
-            (Ordering::Equal, Ordering::Greater) => OverlapOrdering::OverlapEqualLess,
+            (Ordering::Less, Ordering::Less) => OverlapOrdering::Less,
+            (Ordering::Less, Ordering::Equal) => OverlapOrdering::OverlapEqualLess,
+            (Ordering::Less, Ordering::Greater) => {
+                dbg!("Checking for subset");
+                self.direct_compare(other) // overlaps for sure
+            }
             (Ordering::Equal, Ordering::Equal) => OverlapOrdering::Equal,
-            (Ordering::Less, Ordering::Equal) => OverlapOrdering::OverlapEqualGreater,
-            (Ordering::Greater, Ordering::Greater) => OverlapOrdering::Less,
-            // SuperSet or SubSet
-            (Ordering::Less, Ordering::Greater) => self.direct_compare(other),
-            _ => OverlapOrdering::Unrecognizable,
+            (Ordering::Equal, Ordering::Greater) => OverlapOrdering::OverlapEqualGreater,
+            (Ordering::Greater, Ordering::Greater) => OverlapOrdering::Greater,
+
+            // (Ordering::Equal, Ordering::Less)
+            // (Ordering::Greater, Ordering::Less)
+            // (Ordering::Greater, Ordering::Equal)
+            _ => OverlapOrdering::InvalidInterval,
         }
     }
 
@@ -77,15 +82,15 @@ where
             self.start.partial_cmp(&other.start).unwrap(),
             self.end.partial_cmp(&other.end).unwrap(),
         ) {
-            (Ordering::Less, Ordering::Equal) => OverlapOrdering::SuperSet,
-            (Ordering::Less, Ordering::Greater) => OverlapOrdering::OverlapGreater,
-            (Ordering::Equal, Ordering::Greater) => OverlapOrdering::SuperSet,
-            (Ordering::Equal, Ordering::Less) => OverlapOrdering::SuperSet,
+            (Ordering::Less, Ordering::Less) => OverlapOrdering::OverlapGreater,
+            (Ordering::Less, Ordering::Equal) => OverlapOrdering::OverlapEqualGreater,
+            (Ordering::Less, Ordering::Greater) => OverlapOrdering::SuperSet,
+            (Ordering::Equal, Ordering::Greater) => OverlapOrdering::OverlapEqualLess,
+            (Ordering::Equal, Ordering::Less) => OverlapOrdering::SubSet,
             (Ordering::Equal, Ordering::Equal) => OverlapOrdering::Equal,
-            (Ordering::Greater, Ordering::Less) => OverlapOrdering::SuperSet,
+            (Ordering::Greater, Ordering::Less) => OverlapOrdering::SubSet,
             (Ordering::Greater, Ordering::Equal) => OverlapOrdering::SubSet,
             (Ordering::Greater, Ordering::Greater) => OverlapOrdering::OverlapLess,
-            (Ordering::Less, Ordering::Less) => OverlapOrdering::OverlapGreater,
         }
     }
 
