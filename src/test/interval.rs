@@ -29,8 +29,8 @@ fn equal() {
 
 #[test]
 fn super_set() {
-    let interval1 = Interval::new(inc!(1), inc!(4));
-    let interval2 = Interval::new(inc!(2), inc!(3));
+    let interval1 = Interval::new(exc!(1), exc!(4));
+    let interval2 = Interval::new(exc!(2), exc!(3));
 
     assert_eq!(
         interval1.compare_other(&interval2),
@@ -40,44 +40,82 @@ fn super_set() {
 
 #[test]
 fn sub_set() {
-    let interval1 = Interval::new(inc!(2), inc!(3));
-    let interval2 = Interval::new(inc!(1), inc!(4));
+    let interval1 = Interval::new(exc!(2), exc!(3));
+    let interval2 = Interval::new(exc!(1), exc!(4));
 
     assert_eq!(interval1.compare_other(&interval2), OverlapOrdering::SubSet);
 }
 
 #[test]
 fn less() {
-    let interval1 = Interval::new(inc!(1), inc!(2));
-    let interval2 = Interval::new(inc!(3), inc!(4));
+    let interval1 = Interval::new(exc!(1), exc!(2));
+    let interval2 = Interval::new(exc!(3), exc!(4));
 
     assert_eq!(interval1.compare_other(&interval2), OverlapOrdering::Less);
 }
 
 #[test]
-fn overlap_less() {
-    let interval1 = Interval::new(inc!(1), inc!(2));
-    let interval2 = Interval::new(inc!(3), inc!(4));
-
-    assert_eq!(interval1.compare_other(&interval2), OverlapOrdering::Less);
-}
-
-#[test]
-fn overlap_equal_less() {
-    let interval1 = Interval::new(inc!(0), exc!(3));
-    let interval2 = Interval::new(inc!(0), exc!(0));
+fn overlap_start() {
+    let interval1 = Interval::new(exc!(1), exc!(3));
+    let interval2 = Interval::new(exc!(2), exc!(4));
 
     assert_eq!(
         interval1.compare_other(&interval2),
-        OverlapOrdering::OverlapEqualLess
+        OverlapOrdering::OverlapStart
     );
 }
 
-// Less,                // (1, 2) in relation to (3, 4)
-// OverlapLess,         // (1, 3) in relation to (2, 4)
-// OverlapEqualLess,    // (1, 2) in relation to (2, 4)
-// Greater,             // (3, 4) in relation to (1, 2)
-// OverlapGreater,      // (2, 4) in relation to (1, 3)
-// OverlapEqualGreater, // (3, 4) in relation to (1, 3)
-// Equal,               // (1, 2) (1, 2)
-// Unrecognizable,
+#[test]
+fn equal_start() {
+    let interval1 = Interval::new(exc!(1), inc!(2));
+    let interval2 = Interval::new(inc!(2), exc!(3));
+
+    assert_eq!(
+        interval1.compare_other(&interval2),
+        OverlapOrdering::EqualStart
+    );
+}
+
+#[test]
+fn greater() {
+    let interval1 = Interval::new(exc!(3), exc!(4));
+    let interval2 = Interval::new(exc!(1), exc!(2));
+
+    assert_eq!(
+        interval1.compare_other(&interval2),
+        OverlapOrdering::Greater
+    );
+}
+
+#[test]
+fn overlap_end() {
+    let interval1 = Interval::new(exc!(2), exc!(4));
+    let interval2 = Interval::new(exc!(1), exc!(3));
+
+    assert_eq!(
+        interval1.compare_other(&interval2),
+        OverlapOrdering::OverlapEnd
+    );
+}
+
+#[test]
+fn equal_end() {
+    let interval1 = Interval::new(inc!(2), exc!(3));
+    let interval2 = Interval::new(exc!(1), inc!(2));
+
+    assert_eq!(
+        interval1.compare_other(&interval2),
+        OverlapOrdering::EqualEnd
+    );
+}
+
+#[test]
+fn unrecognizable() {
+    let interval1: Interval<i32> = Interval::new(unb!(), unb!());
+    let interval2: Interval<i32> = Interval::new(unb!(), unb!());
+
+    assert_eq!(
+        interval1.compare_other(&interval2),
+        OverlapOrdering::Unrecognizable
+    );
+}
