@@ -1,4 +1,4 @@
-use std::{cmp::Ordering, fmt::Display};
+use std::{cmp::Ordering, fmt::Display, ops::Add};
 
 use comparable_bound::ComparableBound;
 
@@ -37,11 +37,11 @@ where
         Self { start: s, end: e }
     }
 
-    pub fn get_start(&self) -> &ComparableBound<I> {
+    pub fn start(&self) -> &ComparableBound<I> {
         &self.start
     }
 
-    pub fn get_end(&self) -> &ComparableBound<I> {
+    pub fn end(&self) -> &ComparableBound<I> {
         &self.end
     }
 
@@ -121,5 +121,16 @@ where
 {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!("({}-{})", self.start, self.end,))
+    }
+}
+
+impl<I> Add for Interval<I>
+where
+    I: Add<I> + std::cmp::PartialOrd,
+{
+    type Output = Self;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        todo!()
     }
 }
